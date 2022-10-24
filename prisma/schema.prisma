@@ -1,0 +1,68 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Students {
+  id                 String @id @default(uuid())
+  password           String @unique
+  name               String
+  registrationNumber String
+  email              String @unique
+  phoneNumber        String @unique
+}
+
+model Restaurants {
+  id          String            @id @default(uuid())
+  location    String
+  name        String
+  description String
+  owner       RestaurantOwners?
+  menu        Menus[]
+}
+
+model RestaurantOwners {
+  id           String      @id @default(uuid())
+  password     String      @unique
+  name         String
+  email        String      @unique
+  phoneNumber  String      @unique
+  Restaurants  Restaurants @relation(fields: [restaurantId], references: [id])
+  restaurantId String      @unique
+}
+
+model Menus {
+  id            String       @id @default(uuid())
+  weekday       WeekDay
+  restaurantId  String
+  itens         MenuItens[]
+  Restaurants   Restaurants? @relation(fields: [restaurantsId], references: [id])
+  restaurantsId String?
+}
+
+model MenuItens {
+  id          String  @id @default(uuid())
+  name        String
+  description String
+  price       Int
+  Menus       Menus?  @relation(fields: [menusId], references: [id])
+  menusId     String?
+}
+
+enum WeekDay {
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+  SATURDAY
+  SUNDAY
+  ALL
+}
