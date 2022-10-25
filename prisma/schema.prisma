@@ -21,7 +21,8 @@ model Students {
 
 model Restaurants {
   id          String            @id @default(uuid())
-  location    String
+  lat         String
+  log         String
   name        String
   description String
   owner       RestaurantOwners?
@@ -41,7 +42,6 @@ model RestaurantOwners {
 model Menus {
   id            String       @id @default(uuid())
   weekday       WeekDay
-  restaurantId  String
   itens         MenuItens[]
   Restaurants   Restaurants? @relation(fields: [restaurantsId], references: [id])
   restaurantsId String?
@@ -51,6 +51,7 @@ model MenuItens {
   id          String  @id @default(uuid())
   name        String
   description String
+  imageUrl    String?
   price       Int
   Menus       Menus?  @relation(fields: [menusId], references: [id])
   menusId     String?
