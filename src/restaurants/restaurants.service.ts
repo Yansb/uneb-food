@@ -2,7 +2,9 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { PaginatedQueryDto } from 'src/shared/dtos/paginatedQuery.dto';
 import { v4 as uuid } from 'uuid';
-import { NewRestaurantDto } from './dtos/newRestaurant.dto';
+import { Menu, NewRestaurantDto } from './dtos/newRestaurant.dto';
+import { UpdateMenuDto } from './dtos/updateMenu.dto';
+import { hash } from 'bcrypt';
 
 @Injectable()
 export class RestaurantsService {
@@ -29,7 +31,7 @@ export class RestaurantsService {
   }
 
   async getRestaurantDetails(id: string) {
-    const restaurant = await this.prisma.restaurants.findFirst({
+    const restaurant = await this.prisma.restaurants.findUnique({
       where: { id },
       include: {
         menu: {
@@ -56,7 +58,7 @@ export class RestaurantsService {
     owner,
   }: NewRestaurantDto) {
     const restaurantId = uuid();
-    console.log({ menus, owner });
+    const encryptedPassword = await hash(owner.password, 10);
     await this.prisma.$transaction([
       this.prisma.restaurants.create({
         data: {
@@ -68,10 +70,50 @@ export class RestaurantsService {
           owner: {
             create: {
               ...owner,
+              password: encryptedPassword,
             },
           },
         },
       }),
+      ...menus.map((menu) => {
+        return this.prisma.menus.create({
+          data: {
+            restaurantsId: restaurantId,
+            weekday: menu.weekday,
+            itens: {
+              createMany: {
+                data: menu.itens.map((item) => ({
+                  ...item,
+                })),
+              },
+            },
+          },
+        });
+      }),
+    ]);
+  }
+
+  async updateMenu(restaurantId: string, menus: UpdateMenuDto[]) {
+    const menusToDelete = await this.prisma.menus.findMany({
+      where: {
+        restaurantsId: restaurantId,
+        AND: {
+          weekday: {
+            in: menus.map((menu) => menu.weekday),
+          },
+        },
+      },
+    });
+
+    await this.prisma.menus.deleteMany({
+      where: {
+        id: {
+          in: menusToDelete.map((menu) => menu.id),
+        },
+      },
+    });
+
+    this.prisma.$transaction([
       ...menus.map((menu) => {
         return this.prisma.menus.create({
           data: {

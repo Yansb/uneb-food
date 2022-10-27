@@ -37,7 +37,7 @@ class Itens {
   imageUrl?: string;
 }
 
-class Menu {
+export class Menu {
   @IsEnum(WeekDay)
   weekday: WeekDay;
   @ValidateNested()
